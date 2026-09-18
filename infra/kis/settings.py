@@ -97,6 +97,9 @@ class KisPaperSettings:
     # periods. Keep enough headroom for a single queued REST request while the
     # controller remains fail-closed until account/warmup data is confirmed.
     request_timeout_sec: float = 30.0
+    # Quotes drive the visible current price.  Do not let one stalled quote
+    # inherit the longer account/warmup timeout and freeze the display.
+    quote_timeout_sec: float = 8.0
     rest_min_interval_sec: float = 1.05
     websocket_subscription_delay_sec: float = 0.5
     order_enabled: bool = False
@@ -144,6 +147,9 @@ class KisPaperSettings:
             request_timeout_sec=float(
                 _env_text(source, "KIS_REQUEST_TIMEOUT_SEC", "30.0")
             ),
+            quote_timeout_sec=float(
+                _env_text(source, "KIS_QUOTE_TIMEOUT_SEC", "8.0")
+            ),
             rest_min_interval_sec=float(
                 _env_text(source, "KIS_REST_MIN_INTERVAL_SEC", "1.05")
             ),
@@ -187,6 +193,8 @@ class KisPaperSettings:
             )
         if self.request_timeout_sec <= 0:
             raise KisConfigurationError("KIS_REQUEST_TIMEOUT_SEC must be positive")
+        if self.quote_timeout_sec <= 0:
+            raise KisConfigurationError("KIS_QUOTE_TIMEOUT_SEC must be positive")
         if self.rest_min_interval_sec < 0:
             raise KisConfigurationError("KIS_REST_MIN_INTERVAL_SEC cannot be negative")
         if self.websocket_subscription_delay_sec < 0:
@@ -207,6 +215,7 @@ class KisPaperSettings:
             "hts_id_configured": bool(self.hts_id),
             "rest_url": self.rest_url,
             "websocket_url": self.websocket_url,
+            "quote_timeout_sec": self.quote_timeout_sec,
             "order_enabled": self.order_enabled,
             "futures_symbol_configured": bool(self.futures_symbol),
         }

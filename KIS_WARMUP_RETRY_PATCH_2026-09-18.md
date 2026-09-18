@@ -22,6 +22,16 @@
 - REST 로컬 대기열에서 사용한 시간을 네트워크 제한시간에서 차감해, 전체 요청이 설정 시간의 두 배까지 늘어나지 않게 수정.
 - `.env.kis.example`에 `KIS_REQUEST_TIMEOUT_SEC=30.0` 예시 추가.
 
+### 0-1. 3차 원인: 현재가 조회 지연
+
+웜업 안정화를 위해 공통 REST 제한시간을 30초로 늘리면서 현재가 REST 조회도 같은 30초를 사용하게 됨. 이 때문에 현재가 요청 한 건이 막히면 30초 대기와 최대 30초 재시도 백오프가 연속되어 화면의 현재가가 늦게 보일 수 있었음.
+
+- 웜업·잔고·미체결 등 일반 REST 제한시간은 30초로 유지.
+- 현재가 조회만 `KIS_QUOTE_TIMEOUT_SEC=8.0`의 별도 제한시간을 사용.
+- 현재가 실패 후 재시도 백오프를 최대 30초에서 최대 2초로 단축.
+- 현재가 제한시간도 REST 대기열 대기시간을 포함하는 전체 예산으로 처리.
+- 모의투자 현재가는 REST 폴링이므로 거래소 틱 단위 실시간을 보장하는 변경은 아니며, 서버 지연 시 화면이 장시간 멈추는 현상을 줄이는 패치임.
+
 ### 1. 페이지 체크포인트 및 이어받기
 
 - `HistorySeedLoader.load_seed_bars()`에 `initial_bars`, `checkpoint_cb` 인자를 추가함.
@@ -58,10 +68,15 @@ WARMUP_RETRY_MAX_DELAY_SEC = 60.0
 - `config.py`
 - `tests/test_history_seed_loader.py`
 - `infra/kis/settings.py`
+- `infra/kis/adapter.py`
+- `infra/kis/futures.py`
+- `infra/kis/kis_client.py`
 - `infra/kis/rate_limit.py`
 - `.env.kis.example`
 - `tests/test_kis_rate_limit.py`
 - `tests/test_kis_paper_adapter.py`
+- `tests/test_kis_quote_backoff.py`
+- `tests/test_kis_quote_reconnect.py`
 
 ## 검증
 
@@ -69,12 +84,14 @@ WARMUP_RETRY_MAX_DELAY_SEC = 60.0
 
 ```text
 python -m unittest tests.test_history_seed_loader tests.test_kis_rate_limit tests.test_kis_paper_adapter -v
-python -m py_compile core/history_seed_loader.py infra/kis/settings.py infra/kis/rate_limit.py kis_main.py config.py
+python -m unittest tests.test_kis_paper_adapter tests.test_kis_rate_limit tests.test_kis_quote_backoff tests.test_kis_quote_reconnect -v
+python -m py_compile core/history_seed_loader.py infra/kis/settings.py infra/kis/adapter.py infra/kis/futures.py infra/kis/kis_client.py infra/kis/rate_limit.py kis_main.py config.py
 ```
 
 결과:
 
 - 웜업, KIS REST rate-limit, KIS 모의 어댑터 테스트 25건 통과.
+- 현재가 전용 제한시간·재시도·재연결 관련 테스트 29건 통과.
 - Python 문법 검사 통과.
 
 ## 적용 주의사항

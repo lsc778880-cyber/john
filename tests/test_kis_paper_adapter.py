@@ -68,6 +68,7 @@ class KisPaperAdapterTests(unittest.TestCase):
         self.assertIn(":31000", settings.websocket_url)
         self.assertNotIn("paper-secret", repr(settings))
         self.assertEqual(settings.request_timeout_sec, 30.0)
+        self.assertEqual(settings.quote_timeout_sec, 8.0)
 
     def test_settings_can_read_unlabelled_portal_credential_file(self):
         with TemporaryDirectory() as temp_dir:
@@ -226,6 +227,16 @@ class KisPaperAdapterTests(unittest.TestCase):
         balance_call = self.transport.calls[-1]
         self.assertEqual(balance_call["headers"]["tr_id"], "VTFO6118R")
         self.assertIn("CANO=12345678", balance_call["url"])
+
+    def test_quote_query_uses_short_quote_timeout(self):
+        adapter = KisPaperAdapter(self.settings, transport=self.transport)
+        adapter.futures.inquire_quote("101W09")
+        quote_call = self.transport.calls[-1]
+        self.assertEqual(quote_call["headers"]["tr_id"], "FHMIF10010000")
+        # The shared rate limiter may subtract pacing time already spent from
+        # the eight-second end-to-end budget.
+        self.assertGreater(quote_call["timeout"], 0.0)
+        self.assertLessEqual(quote_call["timeout"], 8.0)
 
     def test_open_order_query_uses_unfilled_only_filter(self):
         adapter = KisPaperAdapter(self.settings, transport=self.transport)
