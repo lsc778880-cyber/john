@@ -13,6 +13,15 @@
 
 ## 수정 내용
 
+### 0. 2차 원인: 10초 REST 제한시간
+
+1차 패치 적용 후 로그에서 체크포인트 `304/600`과 재개 로직은 정상 작동했지만, 재개 후 첫 REST 요청이 정확히 10초에서 다시 종료됨.
+
+- KIS 모의 REST 기본 제한시간을 10초에서 30초로 확장.
+- 잔고·미체결·계좌·주문가능 상위 타이머를 35초로 조정.
+- REST 로컬 대기열에서 사용한 시간을 네트워크 제한시간에서 차감해, 전체 요청이 설정 시간의 두 배까지 늘어나지 않게 수정.
+- `.env.kis.example`에 `KIS_REQUEST_TIMEOUT_SEC=30.0` 예시 추가.
+
 ### 1. 페이지 체크포인트 및 이어받기
 
 - `HistorySeedLoader.load_seed_bars()`에 `initial_bars`, `checkpoint_cb` 인자를 추가함.
@@ -48,22 +57,25 @@ WARMUP_RETRY_MAX_DELAY_SEC = 60.0
 - `kis_main.py`
 - `config.py`
 - `tests/test_history_seed_loader.py`
+- `infra/kis/settings.py`
+- `infra/kis/rate_limit.py`
+- `.env.kis.example`
+- `tests/test_kis_rate_limit.py`
+- `tests/test_kis_paper_adapter.py`
 
 ## 검증
 
 실행 명령:
 
 ```text
-python -m unittest tests.test_history_seed_loader tests.test_kis_rate_limit tests.test_kis_quote_reconnect -v
-python -m py_compile core/history_seed_loader.py kis_main.py config.py
+python -m unittest tests.test_history_seed_loader tests.test_kis_rate_limit tests.test_kis_paper_adapter -v
+python -m py_compile core/history_seed_loader.py infra/kis/settings.py infra/kis/rate_limit.py kis_main.py config.py
 ```
 
 결과:
 
-- 웜업 로더 테스트 3건 통과.
-- KIS REST rate-limit 테스트 6건 통과.
+- 웜업, KIS REST rate-limit, KIS 모의 어댑터 테스트 25건 통과.
 - Python 문법 검사 통과.
-- `test_kis_quote_reconnect` 2건은 현재 테스 픽스처에 `_quote_backoff_until` 필드가 없어 실패함. 본 패치의 변경 파일과는 무관한 기존 테스 픽스처 불일치임.
 
 ## 적용 주의사항
 

@@ -517,10 +517,10 @@ class Config:
     UNFILLED_SYNC_RQNAME = "REQ_UNFILLED_SYNC"
     # KIS paper REST is rate-limited; startup sync requests are deliberately
     # paced and therefore need more headroom than the former desktop broker.
-    ACCOUNT_SNAPSHOT_TIMEOUT_MS = 10000
-    ORDERABLE_SNAPSHOT_TIMEOUT_MS = 10000
-    UNFILLED_SYNC_TIMEOUT_MS = 10000
-    TAKEOVER_TIMEOUT_MS = 10000
+    ACCOUNT_SNAPSHOT_TIMEOUT_MS = 35000
+    ORDERABLE_SNAPSHOT_TIMEOUT_MS = 35000
+    UNFILLED_SYNC_TIMEOUT_MS = 35000
+    TAKEOVER_TIMEOUT_MS = 35000
     UNFILLED_SYNC_MIN_INTERVAL_SEC = 1.5
     # Order notices are delivered by WebSocket. REST is only a safety
     # heartbeat while idle; running four account queries every five seconds
@@ -561,7 +561,7 @@ class Config:
     WARMUP_SAFETY_ROWS = 25
     WARMUP_DAY_START_TIME = "08:30"
     WARMUP_DAY_END_TIME = "15:45"
-    WARMUP_TIMEOUT_SEC = 10.0
+    WARMUP_TIMEOUT_SEC = 30.0
     # Preserve successful KIS history pages across transient failures. Retries
     # use exponential backoff and stop after a bounded number of attempts so a
     # prolonged paper-server outage cannot create an endless request loop.
