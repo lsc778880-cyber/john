@@ -300,7 +300,7 @@ class KisClient(QObject):
             return
         self._quote_inflight = False
         self._quote_error_streak = int(self._quote_error_streak or 0) + 1
-        # Quote requests have their own short timeout.  Keep failure backoff
+        # Quote requests have their own timeout.  Keep failure backoff
         # equally short so the visible price recovers quickly after a transient
         # paper-server stall, while still avoiding a tight retry loop.
         delay_sec = min(2.0, float(2 ** min(self._quote_error_streak - 1, 1)))

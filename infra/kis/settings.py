@@ -97,9 +97,9 @@ class KisPaperSettings:
     # periods. Keep enough headroom for a single queued REST request while the
     # controller remains fail-closed until account/warmup data is confirmed.
     request_timeout_sec: float = 30.0
-    # Quotes drive the visible current price.  Do not let one stalled quote
-    # inherit the longer account/warmup timeout and freeze the display.
-    quote_timeout_sec: float = 8.0
+    # Paper quotes have been observed taking over 15 seconds to return.
+    # A shorter timeout discards valid responses; this is not a refresh rate.
+    quote_timeout_sec: float = 30.0
     rest_min_interval_sec: float = 1.05
     websocket_subscription_delay_sec: float = 0.5
     order_enabled: bool = False
@@ -148,7 +148,7 @@ class KisPaperSettings:
                 _env_text(source, "KIS_REQUEST_TIMEOUT_SEC", "30.0")
             ),
             quote_timeout_sec=float(
-                _env_text(source, "KIS_QUOTE_TIMEOUT_SEC", "8.0")
+                _env_text(source, "KIS_QUOTE_TIMEOUT_SEC", "30.0")
             ),
             rest_min_interval_sec=float(
                 _env_text(source, "KIS_REST_MIN_INTERVAL_SEC", "1.05")
